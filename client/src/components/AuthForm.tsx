@@ -11,13 +11,13 @@ export default function AuthForm() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     try {
-      await signIn(email, password);
+      await signIn();
     } catch (error) {
       console.error(error);
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async () => {
     return;
   };
 
