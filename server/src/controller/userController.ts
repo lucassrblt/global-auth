@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { query } from "./dbController";
 import { Request, Response, NextFunction } from "express";
-import { sendResponse } from "../responseHandler";
+import { sendResponse } from "../response/responseHandler";
 
 interface User {
   id: number;

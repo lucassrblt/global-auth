@@ -1,6 +1,6 @@
 import { query } from "./dbController";
 import { Request, Response, NextFunction } from "express";
-import { sendResponse } from "../responseHandler";
+import { sendResponse } from "../response/responseHandler";
 
 export async function createApplication(
   req: Request,
