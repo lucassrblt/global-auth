@@ -4,6 +4,7 @@ import {
   getApplications,
   createApplication,
 } from "../controller/applicationController";
+import { authMiddleware } from "../middleware/middleware";
 
 const router = express.Router();
 
@@ -12,12 +13,12 @@ router.get("/", (req, res) => {
 });
 
 // User
-router.get("/user", getUsers);
-router.post("/login", login);
-router.post("/signup", createUser);
+router.get("/user", authMiddleware, getUsers);
+router.post("/login", authMiddleware, login);
+router.post("/signup", authMiddleware, createUser);
 
 // Application
-router.get("/application", getApplications);
+router.get("/application/:name", getApplications);
 router.post("/application", createApplication);
 
 export default router;
