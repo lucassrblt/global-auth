@@ -15,8 +15,8 @@ router.get("/", (req, res) => {
 
 // User
 router.get("/user", authMiddleware, getUsers);
-router.post("/login", authMiddleware, login);
-router.post("/signup", authMiddleware, createUser);
+router.post("/login", login);
+router.post("/signup", createUser);
 
 // Application
 router.get("/application", getApplication);
