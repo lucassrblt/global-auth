@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { query } from "./dbController";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, application } from "express";
 import { sendResponse } from "../response/responseHandler";
 
 interface User {
@@ -17,15 +18,20 @@ export async function createUser(
   next: NextFunction
 ): Promise<any> {
   try {
-    const { email, password, application } = req.body;
+    const publicKey = req.headers["x-public-key"];
+    const { email, password } = req.body;
 
-    if (!email.trim() || !password.trim() || !application.trim()) {
+    if (!publicKey) {
+      return sendResponse(res, 400, "Invalid request: Missing headers");
+    }
+
+    if (!email.trim() || !password.trim()) {
       return sendResponse(res, 400, "All fields are required");
     }
 
     const findApplication = await query(
-      "SELECT * FROM applications WHERE name = ?",
-      [application]
+      "SELECT id, name FROM applications WHERE public_key = ?",
+      [publicKey]
     );
 
     if (findApplication.length < 1) {
@@ -66,7 +72,6 @@ export async function getUsers(
 ): Promise<any> {
   try {
     const users: User[] = await query("SELECT * FROM users");
-
     if (users.length < 1) {
       return sendResponse(res, 200, "No users found");
     }
@@ -83,15 +88,20 @@ export async function login(
   next: NextFunction
 ): Promise<any> {
   try {
-    const { email, password, application } = req.body;
+    const { email, password } = req.body;
+    const publicKey = req.headers["x-public-key"];
 
-    if (!email.trim() || !password.trim || !application.trim) {
+    if (!publicKey) {
+      return sendResponse(res, 400, "Invalid request: Missing headers");
+    }
+
+    if (!email.trim() || !password.trim) {
       return sendResponse(res, 400, "All fields are required");
     }
 
     const findApplication = await query(
-      "SELECT * FROM applications WHERE name = ?",
-      [application]
+      "SELECT id, name, private_key FROM applications WHERE public_key = ?",
+      [publicKey]
     );
 
     if (findApplication.length < 1) {
@@ -99,6 +109,7 @@ export async function login(
     }
 
     const applicationId = findApplication[0].id;
+    const privateKey = findApplication[0].private_key;
 
     const findUser = await query(
       "SELECT * FROM users WHERE email = ? AND application_id = ?",
@@ -116,8 +127,43 @@ export async function login(
       return sendResponse(res, 401, "Invalid email or password");
     }
 
-    return sendResponse(res, 200, "Login successful");
+    const token = createToken(
+      user.id,
+      user.email,
+      user.application_id,
+      privateKey
+    );
+
+    const data = {
+      token,
+      message: "Login successful",
+    };
+
+    return sendResponse(res, 200, data);
   } catch (err) {
+    console.log(err);
     return sendResponse(res, 500, "An error occurred");
+  }
+}
+
+function createToken(
+  userId: number,
+  email: string,
+  applicationId: number,
+  privateKey: string
+): string {
+  try {
+    const payload = {
+      userId,
+      email,
+      applicationId,
+    };
+
+    return jwt.sign(payload, privateKey, {
+      expiresIn: "1h",
+      algorithm: "HS256",
+    });
+  } catch (err) {
+    throw new Error("An error occurred");
   }
 }

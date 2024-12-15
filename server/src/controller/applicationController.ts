@@ -36,17 +36,20 @@ export async function createApplication(
     }
 
     // Create public and private keys
-    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
-      modulusLength: 4096, // bits - standard for RSA keys
+    let { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+      modulusLength: 4096,
       publicKeyEncoding: {
-        type: "pkcs1", // "Public Key Cryptography Standards 1"
-        format: "pem", // Most common formatting choice
+        type: "pkcs1",
+        format: "pem",
       },
       privateKeyEncoding: {
-        type: "pkcs1", // "Public Key Cryptography Standards 1"
-        format: "pem", // Most common formatting choice
+        type: "pkcs1",
+        format: "pem",
       },
     });
+
+    publicKey = publicKey.split("\n").slice(1, -2).join("");
+    privateKey = privateKey.split("\n").slice(1, -2).join("");
 
     await query(
       "INSERT INTO applications (name, public_key, private_key) VALUES (?, ?, ?)",
@@ -55,12 +58,10 @@ export async function createApplication(
 
     const data = {
       publicKey,
+      message: "Application created successfully",
     };
 
-    return sendResponse(res, 201, {
-      data,
-      message: "Application created successfully",
-    });
+    return sendResponse(res, 201, data);
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
