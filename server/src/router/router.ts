@@ -1,8 +1,9 @@
 import express from "express";
 import { getUsers, createUser, login } from "../controller/userController";
 import {
-  getApplications,
+  getApplication,
   createApplication,
+  deleteApplication,
 } from "../controller/applicationController";
 import { authMiddleware } from "../middleware/middleware";
 
@@ -18,7 +19,8 @@ router.post("/login", authMiddleware, login);
 router.post("/signup", authMiddleware, createUser);
 
 // Application
-router.get("/application/:name", getApplications);
+router.get("/application", getApplication);
 router.post("/application", createApplication);
+router.delete("/application/:name", deleteApplication);
 
 export default router;

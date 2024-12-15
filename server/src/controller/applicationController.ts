@@ -1,6 +1,18 @@
+import crypto from "crypto";
+
 import { query } from "./dbController";
 import { Request, Response, NextFunction } from "express";
 import { sendResponse } from "../response/responseHandler";
+import bcrypt from "bcrypt";
+
+interface Application {
+  id: number;
+  name: string;
+  password: string;
+  public_key: string;
+  secret_key?: string;
+  created_at: string;
+}
 
 export async function createApplication(
   req: Request,
@@ -23,28 +35,125 @@ export async function createApplication(
       return sendResponse(res, 409, "Application already exists");
     }
 
-    await query("INSERT INTO applications (name) VALUES (?)", [name]);
+    // Create public and private keys
+    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+      modulusLength: 4096, // bits - standard for RSA keys
+      publicKeyEncoding: {
+        type: "pkcs1", // "Public Key Cryptography Standards 1"
+        format: "pem", // Most common formatting choice
+      },
+      privateKeyEncoding: {
+        type: "pkcs1", // "Public Key Cryptography Standards 1"
+        format: "pem", // Most common formatting choice
+      },
+    });
 
-    return sendResponse(res, 201, "Application created successfully");
+    await query(
+      "INSERT INTO applications (name, public_key, private_key) VALUES (?, ?, ?)",
+      [name, publicKey, privateKey]
+    );
+
+    const data = {
+      publicKey,
+    };
+
+    return sendResponse(res, 201, {
+      data,
+      message: "Application created successfully",
+    });
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
 }
 
-export async function getApplications(
+export async function deleteApplication(
+  req: Request,
+  res: Response
+): Promise<any> {
+  try {
+    const name = req.params.name;
+
+    if (!name) {
+      return sendResponse(res, 400, "An application name is required");
+    }
+
+    const application: Application[] = await getApplicationByName(name);
+
+    if (application.length < 1) {
+      return sendResponse(res, 404, "Application not found");
+    }
+
+    await query("DELETE FROM applications WHERE name = ?", [name]);
+
+    return sendResponse(res, 200, "Application deleted successfully");
+  } catch (err) {
+    return sendResponse(res, 500, "An error occurred");
+  }
+}
+export async function getApplication(
   req: Request,
   res: Response,
   next?: NextFunction
 ): Promise<any> {
   try {
-    const applications = await query("SELECT * FROM applications");
+    const name = req.params.name;
 
-    if (applications.length < 1) {
+    if (!name) {
+      return sendResponse(
+        res,
+        400,
+        "Missing password's application or name's application"
+      );
+    }
+
+    const application: Application[] = await getApplicationByName(name);
+
+    if (application.length < 1) {
       return sendResponse(res, 200, "No applications found");
     }
 
-    return sendResponse(res, 200, applications);
+    // const valid = await bcrypt.compare(password, application[0].password);
+
+    // if (!valid) {
+    //   sendResponse(res, 401, "Invalid password");
+    // }
+
+    return sendResponse(res, 200, application);
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
 }
+
+const getAllApplications = async (res: Response): Promise<Application[]> => {
+  try {
+    const value = await query(
+      "SELECT id, name, public_key, created_at FROM applications"
+    );
+    return value;
+  } catch (err) {
+    throw new Error("An error occurred");
+  }
+};
+
+const getApplicationByName = async (name: string): Promise<Application[]> => {
+  try {
+    return await query(
+      "SELECT id, name, public_key, created_at FROM applications WHERE name = ?",
+      [name]
+    );
+  } catch (err) {
+    throw new Error("An error occurred");
+  }
+};
+
+export const getApplicationByPublicKey = async (
+  publicKey: string
+): Promise<Application[]> => {
+  try {
+    return await query("SELECT * FROM applications WHERE public_key = ?", [
+      publicKey,
+    ]);
+  } catch (err) {
+    throw new Error("An error occurred");
+  }
+};
