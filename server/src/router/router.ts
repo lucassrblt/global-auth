@@ -19,7 +19,7 @@ router.post("/login", login);
 router.post("/signup", createUser);
 
 // Application
-router.get("/application", getApplication);
+router.get("/application/:name", getApplication);
 router.post("/application", createApplication);
 router.delete("/application/:name", deleteApplication);
 
