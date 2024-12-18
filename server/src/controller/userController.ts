@@ -55,11 +55,15 @@ export async function createUser(
       return sendResponse(res, 409, "User already exists");
     }
 
-    await query(
+    let result = await query(
       "INSERT INTO users (email, password, application_id) VALUES (?, ?, ?)",
       [email, hashedPassword, applicationId]
     );
-    return sendResponse(res, 201, "User created successfully");
+    const userId = Number(result.insertId);
+    return sendResponse(res, 201, "User created successfully", {
+      email,
+      userId,
+    });
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
@@ -76,7 +80,7 @@ export async function getUsers(
       return sendResponse(res, 200, "No users found");
     }
 
-    return sendResponse(res, 200, users);
+    return sendResponse(res, 200, "Users retrieved successfully", users);
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
@@ -134,12 +138,7 @@ export async function login(
       privateKey
     );
 
-    const data = {
-      token,
-      message: "Login successful",
-    };
-
-    return sendResponse(res, 200, data);
+    return sendResponse(res, 200, "Login successful", { token });
   } catch (err) {
     console.log(err);
     return sendResponse(res, 500, "An error occurred");

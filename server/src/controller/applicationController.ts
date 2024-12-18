@@ -56,12 +56,9 @@ export async function createApplication(
       [name, publicKey, privateKey]
     );
 
-    const data = {
+    return sendResponse(res, 201, "Application created successfully", {
       publicKey,
-      message: "Application created successfully",
-    };
-
-    return sendResponse(res, 201, data);
+    });
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
@@ -119,7 +116,7 @@ export async function getApplication(
     //   sendResponse(res, 401, "Invalid password");
     // }
 
-    return sendResponse(res, 200, application);
+    return sendResponse(res, 200, "Application find", application);
   } catch (err) {
     return sendResponse(res, 500, "An error occurred");
   }
