@@ -11,7 +11,6 @@ export const connectToDb = async () => {
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       port: parseInt(process.env.DB_PORT as string),
-      connectionLimit: 5,
     });
     console.log("Connected to database");
   } catch (err) {
@@ -23,11 +22,10 @@ export const connectToDb = async () => {
 process.on("exit", () => {
   pool.end();
 });
-
 export async function query(
   sqlStatement: string,
   params?: any[]
-): Promise<any[]> {
+): Promise<any> {
   if (!pool) {
     await connectToDb();
   }
@@ -37,6 +35,9 @@ export async function query(
     const response = await client.query(sqlStatement, params);
     return response;
   } catch (error) {
+    console.log(error);
     throw error;
+  } finally {
+    if (client) client.release();
   }
 }
